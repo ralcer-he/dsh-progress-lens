@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect x="1" y="1" width="62" height="62" rx="16" fill="var(--dsw-alias-bg-layer-1)" stroke="var(--dsw-alias-border-l1)" stroke-width="2"/>
+  <path d="M8 34h10l5-14 8 26 6-18 4 10h15" stroke="var(--dsw-alias-brand-primary)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="49" cy="18" r="4" fill="var(--dsw-alias-state-success-primary)"/>
+</svg>

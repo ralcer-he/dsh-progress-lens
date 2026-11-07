@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "Progress Lens",
+    "description": "Read-only right-side panel that narrates what has already run and answers optional questions. It never writes to the session and never starts a second model."
+  },
+  "title": "Progress Lens",
+  "show": "Open progress panel",
+  "hide": "Collapse progress panel",
+  "elapsed": "elapsed",
+  "turn": "turn/step",
+  "working": "running",
+  "idle": "idle",
+  "error": "error",
+  "empty": "Nothing yet. Progress and reasoning lines appear here as work runs.",
+  "placeholder": "Ask a follow-up… (no model call unless you ask)",
+  "asking": "thinking…",
+  "send": "Ask"
+}

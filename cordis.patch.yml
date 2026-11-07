@@ -1,0 +1,4 @@
+- insert:
+    - id: progress-lens
+      name: 'dsh-progress-lens'
+      config: {}

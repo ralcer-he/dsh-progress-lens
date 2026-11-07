@@ -1,0 +1,60 @@
+{
+  "name": "dsh-progress-lens",
+  "version": "1.0.0",
+  "description": "A right-side panel that tells you, in plain words, what a long-running task has done and what it is doing next. Read-only, and you can talk to it.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ralcer-he",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ralcer-he/dsh-progress-lens.git"
+  },
+  "homepage": "https://github.com/ralcer-he/dsh-progress-lens#readme",
+  "bugs": {
+    "url": "https://github.com/ralcer-he/dsh-progress-lens/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "progress",
+    "sidebar",
+    "observability"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale",
+        "dsh-better-sidebar"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "dsh-better-sidebar": ">=0.28.0"
+  },
+  "peerDependenciesMeta": {
+    "dsh-better-sidebar": {
+      "optional": true
+    }
+  }
+}
