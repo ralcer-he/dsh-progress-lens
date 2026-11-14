@@ -1,7 +1,7 @@
 {
   "name": "dsh-progress-lens",
-  "version": "1.0.0",
-  "description": "A right-side panel that tells you, in plain words, what a long-running task has done and what it is doing next. Read-only, and you can talk to it.",
+  "version": "1.1.0",
+  "description": "A right-side panel that tells you, in plain words, what a long-running task has done, what it is doing next — and occasionally mutters a thought of its own. Read-only, and you can talk to it.",
   "type": "module",
   "license": "MIT",
   "author": "ralcer-he",
@@ -19,7 +19,9 @@
     "dsh",
     "progress",
     "sidebar",
-    "observability"
+    "observability",
+    "reasoning",
+    "aside"
   ],
   "exports": {
     ".": "./index.js",

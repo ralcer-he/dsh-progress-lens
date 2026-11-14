@@ -38,6 +38,21 @@ const TRACE_KEEP = 60;
 /** How often the sweeper checks whether some session is due for a digest. */
 const SWEEP_MS = 15_000;
 
+/* ---- "Thoughts out loud" (碎碎念 / 心里话) --------------------------------
+ * A second, independent channel. The digest above translates reasoning into a
+ * third-person progress report; this one keeps the *person* in it — a
+ * hesitation, a small delight, a muttered "this is a pain". It is deliberately
+ * sparse: only sentences carrying a subjective signal are kept, they are
+ * rewritten (not copied) into one short first-person aside, and at most one
+ * aside per MURMUR_INTERVAL_MS may reach the panel. No thoughts, no line.
+ */
+/** Shortest gap between two asides; the "no idle chatter" floor. */
+const MURMUR_INTERVAL_MS = 60_000;
+/** How many candidate thoughts feed one rewrite. */
+const MURMUR_SEED_KEEP = 20;
+/** Cap on pending candidate thoughts per session. */
+const MURMUR_MAX_SEED = 40;
+
 const sse = (frame) => `data: ${JSON.stringify(frame)}\n\n`;
 
 function errorText(e) {
@@ -204,6 +219,38 @@ const ANSWER_SYSTEM = [
   '- 不许「根据以上」「综上」「您好」「很高兴为您」这类话。',
 ].join('\n');
 
+/**
+ * Only *subjective* reasoning is worth an aside. Pure execution reasoning
+ * ("read X first, then diff Y") never matches, so it never becomes chatter.
+ * Bilingual because the reasoning stream is not guaranteed to be Chinese.
+ */
+const MURMUR_SIGNAL = /(不确定|拿不准|不太|有点|好像|大概|也许|可能|估计|猜|万一|难道|会不会|算了|反正|顺手|干脆|本来|不如|还是|换个|绕|烦|漂亮|挺好|爽|慌|当真|飘|赖|嫌|可惜|幸好|终于|总算|果然|居然|竟然|划不来|没必要|锁死|白费|多此一举|早知道|嗯|哦|哎呀|罢了|得了|悄悄|一点点|别扭|说不清|说不上|琢磨|缓一下|绕死|难为|没劲|得意|有意思|看错|记着|盯着|说不定|要不是|倒是|反而|索性|心情|痒|馋|\bnot sure\b|\bunsure\b|\bmaybe\b|\bprobably\b|\bguess\b|\bwonder\b|\bhmm\b|\bwell\b|\bwait\b|\bactually\b|\bugh\b|\btricky\b|\bannoying\b|\bnice\b|\boh\b|\bah\b|\bcareful\b|\bbetter\b|\binstead\b|\bsimpler\b|\bworks\b|\bhopefully\b|\brisky\b|\bturns out\b|\bi think\b|\bkind of\b)/i;
+
+const MURMUR_SIGNAL_SOFT = /(其实|说真的|老实说|说起来|话说|唔|诶|诶呀|嚯|嗬|害|啧|嘶|额|嗯呐|哦哟|得了吧|行吧|好吧|那就|懒得|不想|巴不得|想了想|回头|顺带|捎带|省得|免得|白搭|合着|敢情|可算|好在|亏得|偏偏|愣是|硬是|差点|几乎|勉强|凑合|差不多|八成|保不齐|没准|指不定|天晓得|鬼知道|谁晓得|拉倒|作罢|也罢|管它呢|随它|爱咋咋|不折腾了|够了|行了|成吧|想当然|可别|何苦|至于嘛|值当|不值当|图啥|犯不着|随口|顺嘴|多嘴|插一句|话说回来|说到底|想来想去|横竖|好歹|总归|终归|说白了|坦白讲|不瞒你说|你别说|还别说|怪不得|怨不得|难怪|合该|活该|赶巧|不巧|偏巧|正巧|得亏|多亏|幸亏|亏了|早知|当初|刚想|正要|还想|本想|原想|本来想|差点就|险些|够呛|不妙|要糟|坏了|糟了|舒坦|痛快|解气|过瘾|不赖|够意思|有意思|有戏|没戏|白忙|白折腾|瞎忙|折腾|磨叽|磨蹭|卡壳|卡住|绕晕|头大|头疼|脑壳疼|上头|烦人|闹心|糟心|堵心|窝火|来气|憋屈|不值|划不来|肉疼|心疼|可惜了|遗憾|美中不足|差口气|差点意思|不够味|将就|得过且过|\balright\b|\bfine\b|\bokay\b|\bhuh\b|\bhey\b|\bmeh\b|\bphew\b|\boops\b|\bwhatever\b|\bhonestly\b|\bfrankly\b|\bsort of\b|\bi guess\b|\bi mean\b|\byou know\b|\balmost\b|\bnearly\b|\bbarely\b|\bgo figure\b|\bwho knows\b|\bnever mind\b|\bwhy not\b|\bwhy bother\b|\bmight as well\b|\bno point\b|\bnot worth\b)/i;
+
+/** Keep a sentence readable without scrubbing its voice away. */
+function softClean(text) {
+  return String(text || '').replace(/\s{2,}/g, ' ').trim();
+}
+
+const MURMUR_SYSTEM = [
+  '你正在埋头干活，脑子里偶尔会飘过一些跟进度无关的念头：',
+  '有点拿不准、有点嫌麻烦、忽然想通了、小小的得意、',
+  '拿不准要不要换个做法、或者只是悄悄嘀咕半句。',
+  '',
+  '把这些念头压成一句自言自语，像人干活时不小心说出声的那半句。',
+  '用中文，第一人称，两到三句短话，总共不超过 70 字，可以连着多念叨半句。',
+  '',
+  '要求：',
+  '- 是「心里话」，不是进度汇报：不说做完了什么、不说下一步、不报卡点、不解释方案。',
+  '- 像随口嘟囔，可以带一点别扭、黏、或者小小的嘴硬，但别闹、别撒娇过头、别喊名字。',
+  '- 不许出现工具名、文件名、路径、英文标识符、轮次步数、报错码。',
+  '- 不许「根据」「综上」「首先」「其次」这类条理腔，不许编号、不许 markdown、不许用引号括起来。',
+  '- 只写那一句，别解释它是怎么来的，别复述给你的念头。',
+  '- 别太沉默：里头哪怕只有一丝犹豫、一点嫌麻烦、半句小得意，也值得咂摸出来小声说一句。',
+  '- 只有真的一点可嘀咕的都没有，才只回一个字：无。',
+].join('\n');
+
 export function apply(ctx) {
   /** res -> sessionId (null = 尚未声明，推全量为空) */
   const connections = new Map();
@@ -230,6 +277,10 @@ export function apply(ctx) {
     lastSummaryAt: 0,
     toolCount: 0,
     summarizing: false,
+    /** independent "thoughts out loud" channel */
+    murmurSeed: [],
+    lastMurmurAt: 0,
+    murmuring: false,
     touchedAt: Date.now(),
   });
 
@@ -335,6 +386,50 @@ export function apply(ctx) {
       .finally(() => { b.summarizing = false; });
   };
 
+  /**
+   * Collect a candidate thought. Sentences without a subjective signal are
+   * dropped here — this is the "no idle chatter" filter, and it is why the
+   * aside channel stays quiet during routine execution reasoning.
+   */
+  const murmurSeed = (sessionId, text) => {
+    const b = bucket(sessionId);
+    if (b === null) return;
+    const clean = softClean(text);
+    if (!clean || clean.length < 2) return;
+    if (!MURMUR_SIGNAL.test(clean) && !MURMUR_SIGNAL_SOFT.test(clean)) return;
+    if (b.murmurSeed.includes(clean)) return;
+    b.murmurSeed.push(clean.slice(0, 160));
+    if (b.murmurSeed.length > MURMUR_MAX_SEED) {
+      b.murmurSeed = b.murmurSeed.slice(-MURMUR_MAX_SEED);
+    }
+    b.touchedAt = Date.now();
+  };
+
+  /** Rewrite the collected thoughts into ONE short first-person aside. */
+  const emitMurmur = (sessionId) => {
+    const b = bucket(sessionId);
+    if (b === null || b.murmuring) return;
+    if (b.murmurSeed.length === 0) return;            // no thoughts → no line
+    if (Date.now() - b.lastMurmurAt < MURMUR_INTERVAL_MS) return;
+    b.murmuring = true;
+    b.lastMurmurAt = Date.now();
+    const seeds = b.murmurSeed.slice(-MURMUR_SEED_KEEP);
+    b.murmurSeed = [];
+    isolatedAsk(ctx, MURMUR_SYSTEM, seeds.join('\n').slice(0, 2600), 200)
+      .then((out) => {
+        const clean = String(out || '').trim();
+        if (!clean || clean === '无' || clean.length < 2) {
+          // Empty = the call failed, so keep the seeds for a later retry;
+          // "无" = the model judged them unworthy, so let them go quietly.
+          if (!clean) b.murmurSeed.push(...seeds);
+          return;
+        }
+        line(sessionId, 'murmur', clean.replace(/^无[，。,]?\s*/, '').slice(0, 120));
+      })
+      .catch(() => { b.murmurSeed.push(...seeds); })
+      .finally(() => { b.murmuring = false; });
+  };
+
   ctx.effect(() => {
     const disposers = [];
     const on = (event, listener) => disposers.push(ctx.on(event, listener, { global: true }));
@@ -387,6 +482,10 @@ export function apply(ctx) {
         b.pending = (b.pending || '') + t;
         if (b.pending.length > 400 || /[。！？!?\n]/.test(t)) {
           trace(sid, b.pending);
+          // The same sentence is also offered to the "thoughts out loud"
+          // channel; its own filter decides whether it is worth keeping.
+          murmurSeed(sid, b.pending);
+          emitMurmur(sid);
           b.pending = '';
         }
       } else if (ch.type === 'tool-call-delta' && ch.name) {
@@ -452,12 +551,22 @@ export function apply(ctx) {
 
     // ---- sweep: sessions that went quiet still get their digest -------------
     sweepTimer = setInterval(() => {
+      const now = Date.now();
       for (const [sid, b] of buckets) {
-        if (b.summarizing) continue;
-        if (!b.status.running && b.feed.length === 0) continue;
-        if (Date.now() - b.lastSummaryAt < SUMMARY_INTERVAL_MS) continue;
-        if (b.trace.length === 0) continue;
-        emitDigest(sid, 'interval');
+        // Channel 1: the plain-language progress digest (unchanged rules).
+        if (!b.summarizing
+          && (b.status.running || b.feed.length > 0)
+          && now - b.lastSummaryAt >= SUMMARY_INTERVAL_MS
+          && b.trace.length > 0) {
+          emitDigest(sid, 'interval');
+        }
+        // Channel 2: a thought-out-loud aside, only when thoughts were
+        // actually collected and the quiet gap has passed.
+        if (!b.murmuring
+          && b.murmurSeed.length > 0
+          && now - b.lastMurmurAt >= MURMUR_INTERVAL_MS) {
+          emitMurmur(sid);
+        }
       }
     }, SWEEP_MS);
     if (typeof sweepTimer.unref === 'function') sweepTimer.unref();

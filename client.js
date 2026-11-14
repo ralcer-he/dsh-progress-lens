@@ -39,6 +39,7 @@ window.__ModuleLoader__.load({
       progress: '动态',
       question: '你',
       answer: '这边',
+      murmur: '心里话',
       justStarted: '刚起步',
       minutes: '已经干了 {n} 分钟',
       hours: '已经干了 {n} 个多小时',
@@ -61,6 +62,7 @@ window.__ModuleLoader__.load({
       progress: 'update',
       question: 'you',
       answer: 'lens',
+      murmur: 'aside',
       justStarted: 'just started',
       minutes: 'going for {n} min',
       hours: 'going for {n}h+',
@@ -137,6 +139,18 @@ window.__ModuleLoader__.load({
   font-size: 11px;
 }
 .pl-item[data-kind="error"] .pl-text { color: var(--dsw-alias-state-error-primary); }
+/* A thought muttered under the breath: no label, a little lighter, italic,
+   set apart from the progress lines so the two channels never read as one. */
+.pl-item[data-kind="murmur"] {
+  padding-left: 8px;
+  border-left: 2px solid var(--dsw-alias-border-l2);
+}
+.pl-item[data-kind="murmur"] .pl-kind { display: none; }
+.pl-item[data-kind="murmur"] .pl-text {
+  color: var(--dsw-alias-label-tertiary);
+  font-style: italic;
+  font-size: 11px;
+}
 .pl-empty { color: var(--dsw-alias-label-tertiary); }
 .pl-ask {
   flex: none;
@@ -299,7 +313,7 @@ window.__ModuleLoader__.load({
         try {
           // Hand the model the conversation in plain Chinese labels; raw kinds
           // like "digest:" make it answer like a log parser instead of a person.
-          const who = { question: '他说的', answer: '你说的', digest: '你之前报的进展', progress: '动态', error: '出错' };
+          const who = { question: '他说的', answer: '你说的', digest: '你之前报的进展', progress: '动态', error: '出错', murmur: '你小声嘀咕的' };
           const context = feedRef.current.slice(-12).map((x) => `${who[x.kind] || ''}${who[x.kind] ? '：' : ''}${x.text}`);
           await fetch(ASK_PATH, {
             method: 'POST',

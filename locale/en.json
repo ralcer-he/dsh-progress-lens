@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Progress Lens",
-    "description": "Read-only right-side panel that narrates what has already run and answers optional questions. It never writes to the session and never starts a second model."
+    "description": "Read-only right-side panel: a short progress note now and then, an occasional thought muttered under the breath, and optional questions. It never writes to the session and never starts a second model."
   },
   "title": "Progress Lens",
   "show": "Open progress panel",
